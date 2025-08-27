@@ -1,33 +1,39 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { loadData, saveData } = require('../dataManager.js');
+const User = require('../../models/User.js');
+
+const COOLDOWN_TIME = 60 * 60 * 1000; // 1 hour
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('job')
-    .setDescription('Applies for a job with a 50% chance of success.'),
+    .setName('beg')
+    .setDescription('Beg for money with a 1-hour cooldown.'),
   
   async execute(interaction) {
     const userId = interaction.user.id;
-    let userBalances = loadData();
-    
-    // Initialize user's data object if it doesn't exist
-    if (!userBalances[userId]) {
-      userBalances[userId] = { balance: 0 };
-    }
-    
-    const jobSuccess = Math.random() < 0.5;
-    let earnings = 0;
-    let responseMessage;
+    let userData = await User.findOne({ userId });
 
-    if (jobSuccess) {
-      earnings = Math.floor(Math.random() * (9000 - 1000 + 1)) + 1000;
-      userBalances[userId].balance += earnings;
-      responseMessage = `Congratulations, you got the job and earned $${earnings}! Your new balance is $${userBalances[userId].balance}.`;
-    } else {
-      responseMessage = "Unfortunately, you did not get the job. You earned $0.";
+    // Initialize user data if it doesn't exist
+    if (!userData) {
+      userData = new User({ userId });
     }
 
-    saveData(userBalances);
-    await interaction.reply(responseMessage);
+    const now = Date.now();
+    const timeRemaining = COOLDOWN_TIME - (now - userData.lastBeg);
+
+    if (timeRemaining > 0) {
+      const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+      return interaction.reply({
+        content: `You need to wait ${minutesRemaining} minutes before you can beg again.`,
+        ephemeral: true
+      });
+    }
+
+    const earnedAmount = Math.floor(Math.random() * 250) + 1;
+    userData.balance += earnedAmount;
+    userData.lastBeg = now;
+
+    await userData.save();
+
+    await interaction.reply(`You begged and received $${earnedAmount}! Your new balance is $${userData.balance}.`);
   },
 };
