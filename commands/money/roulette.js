@@ -24,26 +24,30 @@ module.exports = {
     const betColor = interaction.options.getString('color');
     let userBalances = loadData();
 
+    // Initialize user data if it doesn't exist
+    if (!userBalances[userId]) {
+      userBalances[userId] = { balance: 0 };
+    }
+
     // Check if the user has enough money
-    if (!userBalances[userId] || userBalances[userId] < betAmount) {
-      await interaction.reply(`You don't have enough money to place that bet. Your balance is $${userBalances[userId] || 0}.`);
+    if (userBalances[userId].balance < betAmount) {
+      await interaction.reply(`You don't have enough money to place that bet. Your balance is $${userBalances[userId].balance}.`);
       return;
     }
     
-    // The "house" has a 50/50 chance with red/black
+    // 50/50 chance for red or black
     const rouletteResult = Math.random() < 0.5 ? 'red' : 'black';
     let responseMessage;
 
     if (betColor === rouletteResult) {
-      userBalances[userId] += betAmount;
-      responseMessage = `🎉 The ball landed on **${rouletteResult}**! You win $${betAmount}. Your new balance is $${userBalances[userId]}.`;
+      userBalances[userId].balance += betAmount;
+      responseMessage = `🎉 The ball landed on **${rouletteResult}**! You win $${betAmount}. Your new balance is $${userBalances[userId].balance}.`;
     } else {
-      userBalances[userId] -= betAmount;
-      responseMessage = `🎲 The ball landed on **${rouletteResult}**. You lose your bet of $${betAmount}. Your new balance is $${userBalances[userId]}.`;
+      userBalances[userId].balance -= betAmount;
+      responseMessage = `🎲 The ball landed on **${rouletteResult}**. You lose your bet of $${betAmount}. Your new balance is $${userBalances[userId].balance}.`;
     }
 
     saveData(userBalances);
     await interaction.reply(responseMessage);
   },
 };
-      
