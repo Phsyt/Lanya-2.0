@@ -4,27 +4,27 @@ const { loadData, saveData } = require('../dataManager.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('rob')
-    .setDescription('Attempt to rob the bank for a chance at more money! (20% chance to lose everything!)'),
+    .setDescription('Attempt to rob the bank! (20% chance to fail and lose all money)'),
   
   async execute(interaction) {
     const userId = interaction.user.id;
     let userBalances = loadData();
     
-    // Initialize user balance if it doesn't exist
+    // Initialize user data if it doesn't exist
     if (!userBalances[userId]) {
-      userBalances[userId] = 0;
+      userBalances[userId] = { balance: 0 };
     }
 
     const robSuccess = Math.random() > 0.2; // 80% chance of success
-    const currentBalance = userBalances[userId];
+    const currentBalance = userBalances[userId].balance;
     let responseMessage;
 
     if (robSuccess) {
-      const stolenAmount = Math.floor(Math.random() * (currentBalance + 1)) + 1; // Example: Steal up to current balance
-      userBalances[userId] += stolenAmount;
-      responseMessage = `💰 You successfully robbed the bank and got away with $${stolenAmount}! Your new balance is $${userBalances[userId]}.`;
+      const stolenAmount = Math.floor(Math.random() * (currentBalance + 1)) + 1;
+      userBalances[userId].balance += stolenAmount;
+      responseMessage = `💰 You successfully robbed the bank and got away with $${stolenAmount}! Your new balance is $${userBalances[userId].balance}.`;
     } else {
-      userBalances[userId] = 0; // Fail and lose all money
+      userBalances[userId].balance = 0;
       responseMessage = `🚨 You failed the robbery and were caught by the police! You lost all your money. Your balance is now $0.`;
     }
     
