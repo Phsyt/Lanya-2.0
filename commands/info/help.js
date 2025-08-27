@@ -52,6 +52,7 @@ module.exports = {
       minecraft: { name: 'Minecraft', emoji: '🟩' },
       info: { name: 'Information', emoji: 'ℹ️' },
       tickets: { name: 'Tickets', emoji: '🎫' },
+      money: {name: 'money', emoji: '🤑' },
     };
     const helpEmbed = new EmbedBuilder()
       .setColor(0x5865f2)
