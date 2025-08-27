@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { loadData, saveData } = require('../dataManager.js');
+const User = require('../../models/User');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -8,7 +8,8 @@ module.exports = {
     .addIntegerOption(option =>
       option.setName('amount')
         .setDescription('The amount of money to bet.')
-        .setRequired(true))
+        .setRequired(true)
+        .setMinValue(1)) // Bet must be at least 1
     .addStringOption(option =>
       option.setName('color')
         .setDescription('The color to bet on (red or black).')
@@ -22,18 +23,31 @@ module.exports = {
     const userId = interaction.user.id;
     const betAmount = interaction.options.getInteger('amount');
     const betColor = interaction.options.getString('color');
-    let userBalances = loadData();
+    let userData = await User.findOne({ userId });
 
-    // Initialize user data if it doesn't exist
-    if (!userBalances[userId]) {
-      userBalances[userId] = { balance: 0 };
+    if (!userData) {
+      userData = new User({ userId });
     }
 
-    // Check if the user has enough money
-    if (userBalances[userId].balance < betAmount) {
-      await interaction.reply(`You don't have enough money to place that bet. Your balance is $${userBalances[userId].balance}.`);
-      return;
+    if (userData.balance < betAmount) {
+      return interaction.reply(`You don't have enough money to place that bet. Your balance is $${userData.balance}.`);
     }
+    
+    const rouletteResult = Math.random() < 0.5 ? 'red' : 'black';
+    let responseMessage;
+
+    if (betColor === rouletteResult) {
+      userData.balance += betAmount;
+      responseMessage = `🎉 The ball landed on **${rouletteResult}**! You win $${betAmount}. Your new balance is $${userData.balance}.`;
+    } else {
+      userData.balance -= betAmount;
+      responseMessage = `🎲 The ball landed on **${rouletteResult}**. You lose your bet of $${betAmount}. Your new balance is $${userData.balance}.`;
+    }
+
+    await userData.save();
+    await interaction.reply(responseMessage);
+  },
+};
     
     // 50/50 chance for red or black
     const rouletteResult = Math.random() < 0.5 ? 'red' : 'black';
